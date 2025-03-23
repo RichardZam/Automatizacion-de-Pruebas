@@ -40,7 +40,7 @@ Pues mas que todo es mi capacidad para configurar un entorno de pruebas automati
 
 ## Estructura del Proyecto
 
-![img.png](img.png)
+![img.png](img/img.png)
 
 
 ---
@@ -154,7 +154,7 @@ mvn clean test
 Salida esperada:
 [INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0
 ``` 
-![img_1.png](img_1.png)
+![img_1.png](img/img_1.png)
 
 ### Conclusiones
 Se logró configurar un entorno de pruebas automatizadas en un proyecto Spring Boot.
@@ -162,8 +162,8 @@ Se implementaron pruebas unitarias e integración, cumpliendo con los criterios 
 La documentación describe el proceso, errores encontrados y soluciones aplicadas.
 El código fuente y las pruebas están disponibles en GitHub.
 
-![img_2.png](img_2.png)
-![img_3.png](img_3.png)
+![img_2.png](img/img_2.png)
+![img_3.png](img/img_3.png)
 
 Richard Zambrano Diaz.
 Repository : https://github.com/RichardZam/Automatizacion-de-Pruebas
