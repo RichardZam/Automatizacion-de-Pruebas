@@ -24,6 +24,10 @@ Este proyecto es una API REST sencilla de Productos desarrollada en Spring Boot.
 - [Pruebas Unitarias con Mockito](#pruebas-unitarias-con-mockito)
 - [Pruebas de Integración con WebTestClient](#pruebas-de-integración-con-webtestclient)
 - [Configuración del Pipeline CI/CD](#configuración-del-pipeline-cicd)
+- [Evidencia](#evidencias)
+- [Errores](#errores-encontrados-en-el-pipeline)
+- [Pruebas En el proyecto](#pruebas-en-el-proyecto)
+- [Como ejecutar](#cómo-ejecutar-las-pruebas)
 ---
 
 ## Objetivo de la Evaluación
@@ -397,3 +401,101 @@ jobs:
         run: cat target/surefire-reports/*.txt || echo "No se encontraron logs de pruebas."
 
 ```
+
+
+### Evidencias
+
+### 
+Ejecucion
+- Agrega capturas de pantalla de las pruebas ejecutadas y del pipeline en
+funcionamiento.
+![Img8-parcial1B.png](img/Img8-parcial1B.png)
+- ![imgTest1B.png](img/imgTest1B.png)
+![imgTest21B.png](img/imgTest21B.png)
+- ![imgTest2Prueba1B.png](img/imgTest2Prueba1B.png)
+
+##Pipeline
+![img7-parcial1B.png](img/img7-parcial1B.png)
+
+## Errores Encontrados en el Pipeline
+
+### 1. Error de Sintaxis en YAML
+- Se detectó un error en la sintaxis del archivo de configuración YAML, específicamente al definir un valor compuesto en la misma línea que su clave.
+- **Solución:** Se corrigió la estructura del YAML asegurando que los valores de bloque estén correctamente definidos en líneas separadas.
+
+### 2. Error en la Creación del Contenedor Docker
+- Se produjo un error al crear el contenedor MongoDB debido a un problema con la bandera `--health-retries`.
+- **Causa:** Un salto de línea (`\n`) no esperado en el valor del argumento `--health-retries 5`.
+- **Solución:** Se eliminó el salto de línea y se verificó la correcta escritura de los argumentos en el comando de creación del contenedor.
+
+### 3. Error en la Configuración del Pipeline
+- Inicialmente, los tests no se ejecutaban correctamente debido a una configuración incorrecta en el entorno del pipeline.
+- **Solución:** Se aseguraron las dependencias y configuraciones necesarias en el entorno de ejecución, incluyendo la conexión a MongoDB y la correcta carga de variables de entorno.
+
+### 4. Ejecución de Pruebas
+- Una vez corregidos los errores previos, las pruebas unitarias y de integración se ejecutaron correctamente.
+- **Resultado:** `BUILD SUCCESS` con **0 errores**.
+
+
+# Pruebas en el Proyecto
+
+Este proyecto incluye **pruebas unitarias** con Mockito y **pruebas de integración** con WebTestClient para garantizar la correcta funcionalidad de los servicios.
+
+## 📂 Tipos de pruebas
+
+### ✅ Pruebas Unitarias
+
+Ubicadas en `ProductoServiceTest.java`, verifican la lógica del servicio de productos sin necesidad de levantar el servidor.
+
+- Se usa **Mockito** para simular el comportamiento del repositorio.
+- Se validan los métodos de CRUD en `ProductoService`.
+- Se usa **StepVerifier** para probar los `Mono` y `Flux`.
+
+### 🔗 Pruebas de Integración
+
+Ubicadas en `ProductoIntegrationTest.java` y `ProductoControllerTest.java`, prueban la API real con WebTestClient.
+
+- Se ejecutan sobre un entorno Spring Boot levantado en un puerto aleatorio.
+- Se validan los endpoints de `POST`, `GET` y `DELETE`.
+
+## Cómo ejecutar las pruebas
+
+Asegúrate de tener **Maven** y **Java 17+** instalados.
+
+### Ejecutar todas las pruebas
+
+```sh
+mvn test
+```
+
+Esto ejecutará tanto las pruebas unitarias como las de integración.
+
+### Ejecutar pruebas específicas
+
+Si deseas correr solo las pruebas unitarias:
+
+```sh
+mvn -Dtest=ProductoServiceTest test
+```
+
+Para pruebas de integración:
+
+```sh
+mvn -Dtest=ProductoIntegrationTest test
+```
+
+## ✅ Resultado esperado
+
+Si todas las pruebas pasan, verás en la consola:
+
+```sh
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+```
+
+Si hay errores, revisa la salida y corrige los problemas indicados.
+
+---
+
+**¡Listo!** Ahora tu proyecto tiene una documentación clara para ejecutar las pruebas. 🚀
+
