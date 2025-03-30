@@ -18,7 +18,12 @@ Este proyecto es una API REST sencilla de Productos desarrollada en Spring Boot.
 - [Errores Encontrados y Soluciones Aplicadas](#errores-encontrados-y-soluciones-aplicadas)
 - [Ejecución y Evidencias](#ejecución-y-evidencias)
 - [Conclusiones](#conclusiones)
-
+- [PARCIAL 1B](#PARCIAL_1B)
+- [Objetivo de la Evaluación](#objetivo-de-la-evaluación_1B)
+- [Preparacion de entorno](#preparación-del-entorno)
+- [Pruebas Unitarias con Mockito](#pruebas-unitarias-con-mockito)
+- [Pruebas de Integración con WebTestClient](#pruebas-de-integración-con-webtestclient)
+- [Configuración del Pipeline CI/CD](#configuración-del-pipeline-cicd)
 ---
 
 ## Objetivo de la Evaluación
@@ -167,3 +172,228 @@ El código fuente y las pruebas están disponibles en GitHub.
 
 Richard Zambrano Diaz.
 Repository : https://github.com/RichardZam/Automatizacion-de-Pruebas
+
+# PARCIAL_1B
+
+### Objetivo-de-la-evaluación_1B
+Aplicar los conocimientos adquiridos en pruebas unitarias, integración y
+automatización continua en un entorno controlado
+
+### Preparación del entorno
+Clona el proyecto base desde el repositorio de GitHub
+![img-parcial1B.png](img/img-parcial1B.png)
+![img2-parcial1B.png](img/img2-parcial1B.png)
+
+### Pruebas Unitarias con Mockito
+
+Crea un archivo ProductoServiceTest.java en el paquete test.
+![img3-parcial1B.png](img/img3-parcial1B.png)
+- Simula el comportamiento del ProductoRepository usando @Mock.
+Inyecta el mock en el ProductoService con @InjectMocks.
+- Escribe pruebas para:
+- listarProductos()
+- obtenerProductoPorId()
+- crearProducto()
+
+```
+@Test
+    void listarProductos() {
+        // Given
+        Producto producto1 = new Producto("1", "Producto 1", 100.0, 10);
+        Producto producto2 = new Producto("2", "Producto 2", 200.0, 20);
+
+        when(productoRepository.findAll()).thenReturn(Flux.just(producto1, producto2));
+
+        // When
+        Flux<Producto> resultado = productoService.findAll();
+
+        // Then
+        StepVerifier.create(resultado)
+                .expectNext(producto1)
+                .expectNext(producto2)
+                .verifyComplete();
+
+        verify(productoRepository, times(1)).findAll();
+    }
+
+    @Test
+    void obtenerProductoPorId_Existe() {
+        // Given
+        String id = "1";
+        Producto producto = new Producto(id, "Producto 1", 100.0, 10);
+
+        when(productoRepository.findById(id)).thenReturn(Mono.just(producto));
+
+        // When
+        Mono<Producto> resultado = productoService.findById(id);
+
+        // Then
+        StepVerifier.create(resultado)
+                .expectNext(producto)
+                .verifyComplete();
+
+        verify(productoRepository, times(1)).findById(id);
+    }
+
+    @Test
+    void obtenerProductoPorId_NoExiste() {
+        // Given
+        String id = "999"; // ID inexistente
+
+        when(productoRepository.findById(id)).thenReturn(Mono.empty());
+
+        // When
+        Mono<Producto> resultado = productoService.findById(id);
+
+        // Then
+        StepVerifier.create(resultado)
+                .expectNextCount(0) // No devuelve ningún producto
+                .verifyComplete();
+
+        verify(productoRepository, times(1)).findById(id);
+    }
+
+    @Test
+    void crearProducto() {
+        // Given
+        Producto producto = new Producto(null, "Nuevo Producto", 150.0, 15);
+        Producto productoGuardado = new Producto("1", "Nuevo Producto", 150.0, 15);
+
+        when(productoRepository.save(producto)).thenReturn(Mono.just(productoGuardado));
+
+        // When
+        Mono<Producto> resultado = productoService.save(producto);
+
+        // Then
+        StepVerifier.create(resultado)
+                .expectNext(productoGuardado)
+                .verifyComplete();
+
+        verify(productoRepository, times(1)).save(producto);
+    }
+
+    @Test
+
+```
+
+### Pruebas de Integración con WebTestClient
+- Crea un archivo ProductoIntegrationTest.java.
+
+![img4-parcial1B.png](img/img4-parcial1B.png)
+
+- Usa @SpringBootTest y @AutoConfigureWebTestClient.
+![img-5-parcial1B.png](img/img-5-parcial1B.png)
+
+Usa WebTestClient para simular peticiones HTTP a los siguientes endpoints:
+-  POST /api/productos → crear un producto
+-  GET /api/productos/{id} → obtener un producto
+-  DELETE /api/productos/{id} → eliminar un producto
+```
+  @Test
+    void testCrearProducto() {
+        Producto nuevoProducto = new Producto(null, "Producto de prueba", 99.99, 5);
+
+        webTestClient.post().uri("/api/productos")
+                .body(Mono.just(nuevoProducto), Producto.class)
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(Producto.class)
+                .value(producto -> {
+                    assertThat(producto).isNotNull();
+                    assertThat(producto.getId()).isNotNull();
+                    assertThat(producto.getNombre()).isEqualTo("Producto de prueba");
+                });
+    }
+
+    @Test
+    void testObtenerProductoPorId() {
+        Producto producto = new Producto(null, "Producto existente", 49.99, 10);
+        Producto productoGuardado = productoRepository.save(producto).block();
+
+        assertThat(productoGuardado).isNotNull();
+        assertThat(productoGuardado.getId()).isNotNull();
+
+        // ✅ Verifica si hay datos antes de consultar
+        System.out.println("Productos en BD antes de consulta: " + productoRepository.findAll().collectList().block());
+
+        webTestClient.get().uri("/api/productos/{id}", productoGuardado.getId())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Producto.class)
+                .value(p -> {
+                    assertThat(p).isNotNull();
+                    assertThat(p.getId()).isEqualTo(productoGuardado.getId());
+                });
+    }
+
+    @Test
+    void testEliminarProducto() {
+        Producto producto = new Producto(null, "Producto a eliminar", 30.0, 2);
+        Producto productoGuardado = productoRepository.save(producto).block();
+
+        assertThat(productoGuardado).isNotNull();
+        assertThat(productoGuardado.getId()).isNotNull();
+
+        // Eliminar producto
+        webTestClient.delete().uri("/api/productos/{id}", productoGuardado.getId())
+                .exchange()
+                .expectStatus().isNoContent();
+
+        // Verificar que ya no existe
+        webTestClient.get().uri("/api/productos/{id}", productoGuardado.getId())
+                .exchange()
+                .expectStatus().isNotFound();
+    }
+}
+
+```
+
+### Configuración del Pipeline CI/CD
+- Dentro de tu proyecto, crea la carpeta:
+.github/workflows/
+
+![img6-parcial1B.png](img/img6-parcial1B.png)
+
+- Dentro, crea el archivo test.yml con este contenido básico:
+
+```
+name: Pruebas Automatizadas
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v3
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Configurar Maven
+        run: mvn --version
+
+      - name: Ejecutar pruebas
+        run: mvn test
+
+
+      - name: Publicar Reportes de Pruebas
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: reportes-pruebas
+          path: target/surefire-reports/
+
+      - name: Notificar en caso de error
+        if: failure()
+        run: cat target/surefire-reports/*.txt || echo "No se encontraron logs de pruebas."
+
+```

@@ -1,63 +1,82 @@
 package com.example.pruebasautomatizadasspring.controllers;
 
-import com.example.pruebasautomatizadasspring.PruebasAutomatizadasSpringApplication;
 import com.example.pruebasautomatizadasspring.models.Producto;
-import com.example.pruebasautomatizadasspring.services.ProductoService;
+import com.example.pruebasautomatizadasspring.repositories.ProductoRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.Optional;
-
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-@ExtendWith(SpringExtension.class)
-@WebMvcTest(ProductoController.class)
-@Import({PruebasAutomatizadasSpringApplication.class, ProductoControllerTest.TestConfig.class})
+@SpringBootTest
+@AutoConfigureWebTestClient
 class ProductoControllerTest {
 
     @Autowired
-    private MockMvc mockMvc;
+    private WebTestClient webTestClient;
 
     @Autowired
-    private ProductoService productoService; // Inyectado desde TestConfig
+    private ProductoRepository productoRepository;
 
-    @Configuration
-    static class TestConfig {
-        @Bean
-        public ProductoService productoService() {
-            // Creamos el mock de ProductoService
-            return Mockito.mock(ProductoService.class);
-        }
+    private Producto productoTest;
+
+    @BeforeEach
+    void setUp() {
+        // Limpiar base de datos de prueba y crear producto de prueba
+         //productoRepository.deleteAll().block();
+
+        productoTest = new Producto(null, "Producto de Prueba", 50.0, 5);
+        productoTest = productoRepository.save(productoTest).block();
     }
 
     @Test
-    void testListarProductos() throws Exception {
-        when(productoService.listarProductos()).thenReturn(List.of(new Producto(1L, "Monitor", 300.0)));
+    void crearProducto() {
+        Producto nuevoProducto = new Producto(null, "Nuevo Producto", 75.0, 10);
 
-        mockMvc.perform(get("/api/productos"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nombre").value("Monitor"));
+        webTestClient.post()
+                .uri("/api/productos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Mono.just(nuevoProducto), Producto.class)
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(Producto.class)
+                .value(producto -> {
+                    assert producto.getId() != null;
+                    assert producto.getNombre().equals("Nuevo Producto");
+                    assert producto.getPrecio() == 75.0;
+                    assert producto.getCantidad() == 10;
+                });
     }
 
     @Test
-    void testObtenerProductoPorId() throws Exception {
-        when(productoService.obtenerProductoPorId(anyLong())).thenReturn(Optional.of(new Producto(1L, "Monitor", 300.0)));
+    void obtenerProductoPorId() {
+        webTestClient.get()
+                .uri("/api/productos/{id}", productoTest.getId())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Producto.class)
+                .value(producto -> {
+                    assert producto.getId().equals(productoTest.getId());
+                    assert producto.getNombre().equals(productoTest.getNombre());
+                    assert producto.getPrecio().equals(productoTest.getPrecio());
+                    assert producto.getCantidad().equals(productoTest.getCantidad());
+                });
+    }
 
-        mockMvc.perform(get("/api/productos/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nombre").value("Monitor"));
+    @Test
+    void eliminarProducto() {
+        webTestClient.delete()
+                .uri("/api/productos/{id}", productoTest.getId())
+                .exchange()
+                .expectStatus().isNoContent();
+
+        // Verificar que el producto fue eliminado
+        webTestClient.get()
+                .uri("/api/productos/{id}", productoTest.getId())
+                .exchange()
+                .expectStatus().isNotFound();
     }
 }
