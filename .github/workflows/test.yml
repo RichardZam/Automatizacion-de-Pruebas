@@ -9,6 +9,18 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:6
+        ports:
+          - 27017:27017
+        options: >
+          --health-cmd "echo 'db.runCommand({ ping: 1 })' | mongosh localhost:27017 --quiet" 
+          --health-interval 10s 
+          --health-timeout 5s 
+          --health-retries 5
+
     steps:
       - name: Clonar el repositorio
         uses: actions/checkout@v3
@@ -21,6 +33,9 @@ jobs:
 
       - name: Configurar Maven
         run: mvn --version
+
+      - name: Esperar a que MongoDB esté listo
+        run: sleep 10s
 
       - name: Ejecutar pruebas
         run: mvn test
