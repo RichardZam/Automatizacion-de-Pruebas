@@ -24,15 +24,3 @@ jobs:
 
       - name: Ejecutar pruebas
         run: mvn test
-
-
-      - name: Publicar Reportes de Pruebas
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: reportes-pruebas
-          path: target/surefire-reports/
-
-      - name: Notificar en caso de error
-        if: failure()
-        run: cat target/surefire-reports/*.txt || echo "No se encontraron logs de pruebas."
