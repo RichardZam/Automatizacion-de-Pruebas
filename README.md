@@ -493,9 +493,5 @@ Si todas las pruebas pasan, verás en la consola:
 [INFO] BUILD SUCCESS
 ```
 
-Si hay errores, revisa la salida y corrige los problemas indicados.
-
 ---
-
-**¡Listo!** Ahora tu proyecto tiene una documentación clara para ejecutar las pruebas. 🚀
 
